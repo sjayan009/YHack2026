@@ -1,6 +1,6 @@
 # Forge Coding Mentor 🚀
 
-Forge is an adaptive, AI-powered coding mentor built for **YHack 2026**. Designed to gamify the learning experience for tweens and young developers, Forge immerses users in real-world scenarios (like patching bugs for a Space Defender Arcade game) where their code has direct consequences.
+Forge is an adaptive, AI-powered coding mentor built for **YHack 2026**. Designed to gamify the learning experience for tweens and young developers, Forge immerses users in real-world scenarios where their code has direct consequences.
 
 Unlike traditional coding tutorials, Forge features **Atlas**, an AI mentor powered by Google's Gemini 1.5 Flash model. Atlas doesn't just grade your code—it actively analyzes your real-time behavior (keystrokes, deletions, and errors) to understand your cognitive state and switches personas dynamically to provide the exact coaching you need.
 
@@ -12,10 +12,12 @@ The backend intercepts every action in the workspace and feeds a rolling window 
 - **Rubber Duck:** Activates immediately when you hit syntax errors or highlight/delete massive chunks of code out of frustration. Instead of giving you answers, the Duck gently forces you to explain your logic.
 - **Skeptical User:** A playful persona that triggers if you spam the "Run Code" button repeatedly without actually typing new code, calling you out for "guessing and checking."
 
-### 2. Gamified Mission Workflow
-- Progress through narrative arcs ranging from Game Studios to Wildlife Conservation.
-- **LeetCode-Style Checks:** A strict constraint-validator ensures users write real logic (e.g., `Math.max(0, score)`) instead of naive bypassed variable assignments before merging to main.
-- **Launchpad Simulations:** Simulates real-world deployments by letting you "Launch" your code and see live simulated user QA feedback (e.g. "I challenged my brother... we hit -10,000!") on your live build.
+### 2. Progressive Educational Curriculum
+The platform scales beyond a single sandbox. As users select different deployment sectors, they advance through a 4-tier computer science curriculum, each with custom regex validators and context-aware AI prompts:
+- **Chapter 1: Control Flow (Game Studio)** — Learn boundary constraints and `if` statements to stop a video game score from dropping dynamically below zero.
+- **Chapter 2: Data Structures (Music Tech)** — Learn `Array.push()` methods to append new string tracks to an active DJ queue system.
+- **Chapter 3: Iteration (Space Agency)** — Learn `for` loops to systematically iterate variables and safely deploy 5 heavy supply crates from a Lunar Lander.
+- **Chapter 4: Object Mutation (Wildlife Lab)** — Interact with complex JSON data structures using dot-notation (`drone.status = "Online"`) to boot up hardware.
 
 ### 3. Frictionless Auth & Cloud Persistence (Supabase)
 To optimize for incredibly fast hackathon testing and multi-judge deployment:
