@@ -47,7 +47,7 @@ export const MISSIONS: Record<string, MissionData> = {
   document.getElementById("alienDmgBtn").onclick = function() {
     // BUG: This blindly subtracts 50, even if the score is already 0!
     // TODO: Prevent the score from dropping into negative numbers.
-    // Hint: Try using an if-statement, or Math.max(0, score)
+    // Hint: Try using an if-statement, or the Math object's max method.
     score -= 50; 
     updateDisplay();
   };
@@ -60,9 +60,24 @@ export const MISSIONS: Record<string, MissionData> = {
 `,
     validate: (code) => {
       const stripped = code.replace(/\s+/g, "");
-      const req1 = code.includes("score += 10") || code.includes("score = score + 10");
-      const req2 = code.includes("score -= 50") || code.includes("score = score - 50");
-      const req3 = stripped.includes("Math.max(0") || stripped.includes("score=Math.max") || stripped.includes("if(score<0){score=0") || stripped.includes("if(score<0)score=0") || stripped.includes("if(score<=0)score=0");
+      const req1 = stripped.includes("score+=10") || stripped.includes("score=score+10");
+      
+      const alienStart = stripped.indexOf("alienDmgBtn\").onclick=function(){");
+      const resetStart = stripped.indexOf("resetScoreBtn\").onclick=function(){");
+      const alienCode = alienStart > -1 ? stripped.slice(alienStart, resetStart > -1 ? resetStart : undefined) : "";
+      
+      const req2 = alienCode.includes("score-=50") || alienCode.includes("score=score-50");
+      const minusIndex = Math.max(alienCode.indexOf("score-=50"), alienCode.indexOf("score=score-50"));
+      const clampIndex = Math.max(
+        alienCode.indexOf("Math.max(0"),
+        alienCode.indexOf("score=Math.max"),
+        alienCode.indexOf("if(score<0){score=0"),
+        alienCode.indexOf("if(score<0)score=0"),
+        alienCode.indexOf("if(score<=0)score=0")
+      );
+      
+      // Ensures the clamp is typed AFTER the baseline subtraction
+      const req3 = clampIndex > minusIndex && minusIndex > -1;
       return [req1, req2, req3];
     },
     duckPrompt: "The user just triggered the negative score bug. Ask them 'Walk me through what you expect the code to do when taking alien damage vs what is actually happening.'",
@@ -129,10 +144,21 @@ export const MISSIONS: Record<string, MissionData> = {
 `,
     validate: (code) => {
       const stripped = code.replace(/\s+/g, "");
-      const req1 = code.includes("queueBtn") && code.includes("onclick");
-      const req2 = stripped.includes(".push(");
-      const req3 = stripped.includes("playlist.push(newTrack)") || stripped.includes("playlist.push(");
-      return [req1, req2, req3];
+      const req1Check = code.includes("queueBtn") && code.includes("onclick");
+      
+      const queueStart = stripped.indexOf("queueBtn\").onclick=function(){");
+      const resetStart = stripped.indexOf("resetBtn\").onclick=function(){");
+      const queueCode = queueStart > -1 ? stripped.slice(queueStart, resetStart > -1 ? resetStart : undefined) : "";
+      
+      const trackIndex = queueCode.indexOf("newTrack=");
+      const pushIndex = queueCode.indexOf("playlist.push(");
+      const renderIndex = queueCode.indexOf("renderUI()");
+      
+      const req2 = pushIndex > -1;
+      // Ensure push is called after track is defined, but before UI is updated
+      const req3 = pushIndex > trackIndex && pushIndex < renderIndex && trackIndex > -1 && renderIndex > -1;
+      
+      return [req1Check, req2, req3];
     },
     duckPrompt: "The user is having trouble adding items to an array. Ask them 'If you have a physical list of names on a piece of paper, what steps do you take to add a completely new name to the absolute bottom of it?'",
     mentorWelcome: "Welcome to the studio. I'm Atlas. The main playlist array is malfunctioning. We need to introduce array `.push()` methods so DJs can actually queue music!",
@@ -173,8 +199,8 @@ export const MISSIONS: Record<string, MissionData> = {
 
   document.getElementById("deployBtn").onclick = function() {
     // CRITICAL BUG: It is highly inefficient to drop crates by typing 5 separate lines of code!
-    // TODO: Write a 'for' loop (e.g., for(let i = 0; i < 5; i++) { ... })
-    // Inside the loop's block, do: deployedCrates++; and cargoCrates--;
+    // TODO: Write a loop that repeats exactly 5 times.
+    // Inside the loop's block, increment deployedCrates and decrement cargoCrates by 1.
     
     
     updateTelemetry();
@@ -190,8 +216,24 @@ export const MISSIONS: Record<string, MissionData> = {
     validate: (code) => {
       const stripped = code.replace(/\s+/g, "");
       const req1 = code.includes("deployBtn") && code.includes("onclick");
-      const req2 = stripped.includes("for(") && stripped.includes("i++");
-      const req3 = stripped.includes("deployedCrates++") || stripped.includes("deployedCrates+=1") || stripped.includes("cargoCrates--") || stripped.includes("cargoCrates-=1");
+      
+      const deployStart = stripped.indexOf("deployBtn\").onclick=function(){");
+      const resetStart = stripped.indexOf("resetBtn\").onclick=function(){");
+      const deployCode = deployStart > -1 ? stripped.slice(deployStart, resetStart > -1 ? resetStart : undefined) : "";
+      
+      const req2 = deployCode.includes("for(") && deployCode.includes("i++");
+      
+      const iterIndex = Math.max(
+        deployCode.indexOf("deployedCrates++"),
+        deployCode.indexOf("deployedCrates+=1"),
+        deployCode.indexOf("cargoCrates--"),
+        deployCode.indexOf("cargoCrates-=1")
+      );
+      const telemetryIndex = deployCode.indexOf("updateTelemetry()");
+      
+      // Makes sure crates are dropped within deployBtn and before rendering
+      const req3 = iterIndex > -1 && iterIndex < telemetryIndex && telemetryIndex > -1;
+      
       return [req1, req2, req3];
     },
     duckPrompt: "The user is having trouble with writing a for-loop structure. Ask them 'If you had to pass out 5 pieces of paper to a class, walk me through what you do iteratively until your hands are empty?'",
@@ -259,8 +301,22 @@ export const MISSIONS: Record<string, MissionData> = {
     validate: (code) => {
       const stripped = code.replace(/\s+/g, "");
       const req1 = code.includes("bootBtn") && code.includes("onclick");
-      const req2 = stripped.includes("drone.");
-      const req3 = stripped.includes("drone.status=\"Online\"") || stripped.includes("drone.status='Online'");
+      
+      const bootStart = stripped.indexOf("bootBtn\").onclick=function(){");
+      const resetStart = stripped.indexOf("resetBtn\").onclick=function(){");
+      const bootCode = bootStart > -1 ? stripped.slice(bootStart, resetStart > -1 ? resetStart : undefined) : "";
+      
+      const req2 = bootCode.includes("drone.");
+      
+      const statusIndex = Math.max(
+        bootCode.indexOf("drone.status=\"Online\""),
+        bootCode.indexOf("drone.status='Online'")
+      );
+      const uiIndex = bootCode.indexOf("updateUI()");
+      
+      // Mutate the property BEFORE the drone boots up
+      const req3 = statusIndex > -1 && statusIndex < uiIndex && uiIndex > -1;
+      
       return [req1, req2, req3];
     },
     duckPrompt: "The user is failing to mutate a property on a JSON object. Ask them 'If you have a backpack object containing a book, how do you specifically open the backpack to change out the book variable?'",

@@ -54,6 +54,43 @@ export default function WorkspacePage() {
     setCompletedReqs(reqs);
   };
 
+  // Real-time validation
+  useEffect(() => {
+    if (mission) {
+      const reqs = mission.validate(code);
+      setCompletedReqs(prev => {
+        const isSame = prev.length === reqs.length && prev.every((v, i) => v === reqs[i]);
+        return isSame ? prev : reqs;
+      });
+    }
+  }, [code, mission]);
+
+  // Mentor recognition of completion
+  const hasCelebrated = useRef(false);
+  useEffect(() => {
+    if (completedReqs.length > 0 && completedReqs.every(Boolean)) {
+      if (!hasCelebrated.current) {
+        hasCelebrated.current = true;
+        setMentorState(prev => ({
+          ...prev,
+          inferredCognitiveState: "productive_flow",
+          insightMetadata: { recentSignals: [], reasoning: "Student successfully completed all requirements." }
+        }));
+
+        setIsTyping(true);
+        setTimeout(() => {
+          setIsTyping(false);
+          setMessages(prev => [
+            ...prev, 
+            { role: "mentor", content: "Great job! You've nailed all the requirements. Click 'Merge to Main' whenever you're ready to deploy!" }
+          ]);
+        }, 1200);
+      }
+    } else {
+      hasCelebrated.current = false;
+    }
+  }, [completedReqs]);
+
   const handleEvent = async (event: BehaviorEvent) => {
     const newEvents = [...events, event];
     setEvents(newEvents);

@@ -123,7 +123,7 @@ export default function LaunchpadPage() {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Atlas&apos;s Reflection</h3>
                     <p className="text-white/70 text-sm leading-relaxed italic mb-4">
-                      &quot;Great work hitting your first deployment, {userData?.name || "Dev"}. You stuck with it when the edge cases popped up in {mission?.projectName || 'the module'}. We rely on you to patch critical logic bugs just like this to keep systems highly available. We couldn't afford for this to break in production. Take a breather, you earned it.&quot;
+                      &quot;Great work hitting your first deployment, {userData?.name || "Dev"}. You stuck with it when the edge cases popped up in {mission?.projectName || 'the module'}. We rely on you to patch critical logic bugs just like this to keep systems highly available. We couldn&apos;t afford for this to break in production. Take a breather, you earned it.&quot;
                     </p>                    <div className="flex gap-2">
                       <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded border border-green-500/20 flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Code Review Passed
