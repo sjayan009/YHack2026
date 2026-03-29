@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
+import { MISSIONS, MissionData } from "@/data/missions";
 
 export default function LaunchpadPage() {
   const router = useRouter();
   const [projectData, setProjectData] = useState<any>(null);
   const [userData, setUserData] = useState<any>(null);
+  const [mission, setMission] = useState<MissionData | null>(null);
 
   const [resolvedBugs, setResolvedBugs] = useState<number[]>([]);
 
@@ -27,6 +29,9 @@ export default function LaunchpadPage() {
          const { data, error } = await supabase.from('forge_users').select('*').eq('id', sid).single();
          if (data && data.active_world) {
             setUserData({ name: data.call_sign, world: data.active_world });
+            if (MISSIONS[data.active_world]) {
+              setMission(MISSIONS[data.active_world]);
+            }
             
             const currentCompleted: string[] = data.completed_worlds || [];
             if (!currentCompleted.includes(data.active_world)) {
@@ -46,11 +51,7 @@ export default function LaunchpadPage() {
     }
   };
 
-  const feedbackData = [
-    { author: "QA_Robo_33", type: "bug", text: "I challenged my brother to tap the alien button as fast as possible to see who could get the lowest score! We got to -10,000!", time: "2 mins ago" },
-    { author: "BetaTester9", type: "praise", text: "Wait this is so clean. Finally works!", time: "12 mins ago" },
-    { author: "Lead_Producer", type: "feature", text: "Can we make the score flash green on +10?", time: "18 mins ago" }
-  ];
+  const feedbackData = mission?.launchpadFeedback || [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0B] text-foreground p-8 flex justify-center">
@@ -122,7 +123,7 @@ export default function LaunchpadPage() {
                   <div>
                     <h3 className="font-semibold text-lg mb-1">Atlas&apos;s Reflection</h3>
                     <p className="text-white/70 text-sm leading-relaxed italic mb-4">
-                      &quot;Great work hitting your first deployment, {userData?.name || "Dev"}. You stuck with it when the edge cases popped up. The game no longer crashes when players input corrupted data, and that means we hit our sprint goal. Next time, let&apos;s look at adding proper type safety to inputs early. Take a breather, you earned it.&quot;
+                      &quot;Great work hitting your first deployment, {userData?.name || "Dev"}. You stuck with it when the edge cases popped up in {mission?.projectName || 'the module'}. We rely on you to patch critical logic bugs just like this to keep systems highly available. We couldn't afford for this to break in production. Take a breather, you earned it.&quot;
                     </p>                    <div className="flex gap-2">
                       <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded border border-green-500/20 flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div> Code Review Passed

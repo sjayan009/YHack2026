@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { WorldType } from "../../../types";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { MISSIONS } from "@/data/missions";
 
 const WORLDS: { type: WorldType; icon: string; desc: string }[] = [
   { type: "Game Studio", icon: "👾", desc: "Ship features for the next hit indie game." },
@@ -232,13 +233,13 @@ export default function OnboardingPage() {
                   <div className="h-px w-full bg-white/10 mb-6" />
                   
                   <p className="text-white/80 leading-relaxed font-serif italic mb-6">
-                    &quot;Welcome to the {world}. We&apos;re launching in 48 hours and our lead engineer is out. 
-                    We need your help shipping a critical fix for the Score Tracker module before we go live. 
+                    &quot;Welcome to the team. We&apos;re launching in 48 hours and our lead engineer is out. 
+                    We need your help shipping a critical fix for the {world ? MISSIONS[world]?.projectName : 'module'} before we go live. 
                     I&apos;m Atlas, your mentor. I&apos;ll be in the loop if you get stuck, but I trust you can handle this.&quot;
                   </p>                  
                   <div className="bg-white/5 rounded-lg p-4 mb-8">
                     <div className="font-mono text-sm text-white/60 mb-1">Objective</div>
-                    <div className="font-medium text-lg">Fix the Score Tracker module logic.</div>
+                    <div className="font-medium text-lg leading-snug">{world ? MISSIONS[world]?.bugDescription : ''}</div>
                   </div>
                 </div>
 

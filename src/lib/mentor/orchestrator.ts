@@ -2,6 +2,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { BehaviorEvent, CognitiveState, MentorMode, MentorState } from "../../../types";
+import { MissionData } from "@/data/missions";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
@@ -10,7 +11,8 @@ export async function processMentorAction(
   currentCode: string,
   missionContext: any,
   userMessage?: string,
-  manualModeOverride?: MentorMode
+  manualModeOverride?: MentorMode,
+  currentMission?: MissionData
 ): Promise<{ state: MentorState; response: string | null }> {
   // Analyze only the short-term memory (last 25 events) to prevent getting permanently stuck in one persona
   const recentEvents = allEvents.slice(-25);
@@ -42,7 +44,7 @@ export async function processMentorAction(
     mode = "Rubber Duck";
     reasoning = "Error detected. Switching to Rubber Duck to encourage reflection.";
     if (lastEvent?.type === "error") {
-      promptTrigger = "The user just triggered a persistent bug. Ask them to walk you through what they currently expect the code to do when 'Corrupt Data' is clicked, to encourage reflection.";
+      promptTrigger = currentMission?.duckPrompt || "The user just triggered a persistent bug. Ask them to quietly walk you through what they expect should happen.";
     }
   } else if (lastTwoAreRuns) {
     inferredState = "premature_closure";
@@ -53,8 +55,8 @@ export async function processMentorAction(
     inferredState = "surface_confusion";
     mode = "Senior Dev";
     reasoning = "User is pausing a lot. Offering a gentle nudge.";
-    if (idles % 3 === 0) {
-      promptTrigger = "The user has been idle and might be stuck. Gently suggest they consider using an 'if' statement to block negative scores.";
+    if (lastEvent?.type === "idle") {
+      promptTrigger = `The user has been idle and might be stuck on the '${currentMission?.projectName || "system"}' mission. Look at their code and gently provide a subtle logical hint without giving away the exact code required!`;
     }
   } else if (deleteBursts >= 1) {
     inferredState = "deep_confusion";
@@ -79,6 +81,7 @@ export async function processMentorAction(
       // Use Gemini to generate the dynamic mentor response based on context
       const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
       const prompt = `You are Atlas, a friendly, encouraging AI coding mentor for tweens learning to code.
+Current Mission context: You are helping them debug an app called ${currentMission?.projectName || 'a generic app'} where ${currentMission?.bugDescription || 'there is a math logic bug'}.
 Current Mode: ${mode}
 User's Cognitive State: ${inferredState}
 

@@ -10,54 +10,36 @@ import { Button } from "@/components/ui/button";
 import { BehaviorEvent, MentorState, CognitiveState, MentorMode } from "../../../types";
 import { processMentorAction } from "@/lib/mentor/orchestrator";
 import { CheckCircle2, Circle } from "lucide-react";
-
-const STARTER_CODE = `<!-- Project: Space Defender Arcade -->
-<div id="game">
-  <h2>Score: <span id="score">0</span></h2>
-  <button id="addScoreBtn">Collect Star Coin (+10)</button>
-  <button id="alienDmgBtn">Take Alien Damage (-50)</button>
-  <button id="resetScoreBtn">Reset</button>
-</div>
-
-<script>
-  let score = 0;
-  
-  function updateDisplay() {
-    document.getElementById("score").innerText = score;
-  }
-
-  document.getElementById("addScoreBtn").onclick = function() {
-    score += 10;
-    updateDisplay();
-  };
-
-  document.getElementById("alienDmgBtn").onclick = function() {
-    // BUG: This just blindly subtracts 50, even if the score is already 0!
-    // TODO: Prevent the score from dropping into negative numbers.
-    // Hint: Try using an if-statement, or Math.max() 
-    score -= 50; 
-    updateDisplay();
-  };
-  
-  document.getElementById("resetScoreBtn").onclick = function() {
-    score = 0;
-    updateDisplay();
-  };
-</script>
-`;
+import { supabase } from "@/lib/supabase";
+import { MISSIONS, MissionData } from "@/data/missions";
 
 export default function WorkspacePage() {
   const router = useRouter();
-  const [code, setCode] = useState(STARTER_CODE);
+  const [mission, setMission] = useState<MissionData | null>(null);
+  const [code, setCode] = useState("");
   const [runTrigger, setRunTrigger] = useState(0);
   const [events, setEvents] = useState<BehaviorEvent[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [modeOverride, setModeOverride] = useState<MentorMode | null>(null);
   const [completedReqs, setCompletedReqs] = useState<boolean[]>([false, false, false]);
 
-  const [messages, setMessages] = useState<{ role: "mentor" | "user", content: string }[]>([
-    { role: "mentor", content: "Welcome to PixelForge! I'm Atlas. The math engine in Space Defender is breaking when players take Alien Damage. Hit 'Run Code' and try taking damage to see the exploit in action!" }
-  ]);
+  const [messages, setMessages] = useState<{ role: "mentor" | "user", content: string }[]>([]);
+
+  useEffect(() => {
+    async function loadMission() {
+      const sid = localStorage.getItem("forge_session_id");
+      if (sid) {
+        const { data } = await supabase.from('forge_users').select('active_world').eq('id', sid).single();
+        if (data && data.active_world && MISSIONS[data.active_world]) {
+          const m = MISSIONS[data.active_world];
+          setMission(m);
+          setCode(m.starterCode);
+          setMessages([{ role: "mentor", content: m.mentorWelcome }]);
+        }
+      }
+    }
+    loadMission();
+  }, []);
 
   const [mentorState, setMentorState] = useState<MentorState>({
     currentMode: "Senior Dev",
@@ -67,18 +49,9 @@ export default function WorkspacePage() {
   });
 
   const validateCode = (currentCode: string) => {
-    // Req 1: Star Coin Score increases by 10
-    const req1 = currentCode.includes("score += 10") || currentCode.includes("score = score + 10");
-
-    // Req 2: Alien Damage button decreases score by 50
-    const req2 = currentCode.includes("score -= 50") || currentCode.includes("score = score - 50");
-
-    // Req 3: Clamp zero exploit
-    // Fix: We enforce valid clamping syntax to prevent a loose 'score = 0' from tricking the checkmark.
-    const stripped = currentCode.replace(/\s+/g, "");
-    const req3 = stripped.includes("Math.max(0") || stripped.includes("score=Math.max") || stripped.includes("if(score<0){score=0") || stripped.includes("if(score<0)score=0") || stripped.includes("if(score<=0)score=0");
-    
-    setCompletedReqs([req1, req2, req3]);
+    if (!mission) return;
+    const reqs = mission.validate(currentCode);
+    setCompletedReqs(reqs);
   };
 
   const handleEvent = async (event: BehaviorEvent) => {
@@ -87,7 +60,8 @@ export default function WorkspacePage() {
 
     // Evaluate mentor action periodically or on specific triggers
     if (newEvents.length % 5 === 0 || event.type === 'error' || event.type === 'delete_burst' || event.type === 'run') {
-      const result = await processMentorAction(newEvents, code, {}, undefined, modeOverride || undefined);
+      const missionPayload = mission ? { projectName: mission.projectName, bugDescription: mission.bugDescription, duckPrompt: mission.duckPrompt } : undefined;
+      const result = await processMentorAction(newEvents, code, {}, undefined, modeOverride || undefined, missionPayload as any);
       setMentorState(result.state);
 
       if (result.response) {
@@ -115,7 +89,8 @@ export default function WorkspacePage() {
     setMessages(prev => [...prev, newMessage]);
 
     // Trigger explicit mentor response based on user input
-    const result = await processMentorAction(events, code, {}, msg, modeOverride || undefined);
+    const missionPayload = mission ? { projectName: mission.projectName, bugDescription: mission.bugDescription, duckPrompt: mission.duckPrompt } : undefined;
+    const result = await processMentorAction(events, code, {}, msg, modeOverride || undefined, missionPayload as any);
     setMentorState(result.state);
 
     if (result.response) {
@@ -128,11 +103,13 @@ export default function WorkspacePage() {
   };
 
   const handleLaunch = () => {
-    if (code.trim() === STARTER_CODE.trim()) {
+    if (!mission) return;
+    
+    if (code.trim() === mission.starterCode.trim()) {
       setIsTyping(true);
       setTimeout(() => {
         setIsTyping(false);
-        setMessages(prev => [...prev, { role: "mentor", content: "Hold on! You haven't patched the Alien Damage exploit yet. Try clamping the score to 0 before we push this to the main branch." }]);
+        setMessages(prev => [...prev, { role: "mentor", content: "Hold on! You haven't patched the exploit yet! Fix the bug before we push this out." }]);
       }, 500);
       return;
     }
@@ -166,7 +143,7 @@ export default function WorkspacePage() {
       <div className="h-14 border-b border-white/10 flex items-center justify-between px-4 bg-black/40 backdrop-blur-md z-10">
         <div className="flex items-center gap-4">
           <div className="flex h-6 w-6 rounded-full border border-white/20 bg-white/5 items-center justify-center text-xs font-bold font-mono">F</div>
-          <div className="text-sm font-semibold opacity-80">PixelForge Studios • <span className="text-white/50 font-normal">Space Defender Score Exploit</span></div>
+          <div className="text-sm font-semibold opacity-80">{mission?.world || "Sectors"} • <span className="text-white/50 font-normal">{mission?.projectName || "Loading Mission..."}</span></div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRun} className="bg-green-600 hover:bg-green-500 border-none text-white shadow-[0_0_15px_rgba(22,163,74,0.3)]">
@@ -186,26 +163,20 @@ export default function WorkspacePage() {
           <div className="flex-1 rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-4 flex flex-col">
             <h2 className="text-xl font-semibold mb-4 text-white">Mission Objective</h2>
             <div className="text-sm text-white/70 mb-6 bg-white/5 p-3 rounded-lg border border-white/5">
-              <strong className="text-white">Security Exploit Patched Needed:</strong> Players discovered a bug in <span className="text-blue-400 font-mono">Space Defender Arcade</span>!
-              If they spam the &apos;Alien Damage&apos; button, the underlying mathematical score drops below zero, breaking the high-score boards.
+              <strong className="text-white">{mission?.briefTitle}</strong><br/>
+              {mission?.bugDescription}
               <br /><br />
-              Your job is to refactor the scoring logic so the score hits rock-bottom exactly at 0.
+              {mission?.jobDescription}
             </div>
 
             <div className="font-semibold text-sm mb-2 text-white/50 uppercase tracking-widest">Requirements</div>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2 transition-all">
-                {completedReqs[0] ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> : <Circle className="w-5 h-5 text-white/20 shrink-0" />}
-                <span className={completedReqs[0] ? "text-green-500" : "text-white/80"}>Star Coins increase score (+10)</span>
-              </li>
-              <li className="flex items-start gap-2 transition-all">
-                {completedReqs[1] ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> : <Circle className="w-5 h-5 text-white/20 shrink-0" />}
-                <span className={completedReqs[1] ? "text-green-500" : "text-white/80"}>Alien damage hurts score (-50)</span>
-              </li>
-              <li className="flex items-start gap-2 transition-all">
-                {completedReqs[2] ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> : <Circle className="w-5 h-5 text-white/20 shrink-0" />}
-                <span className={completedReqs[2] ? "text-green-500" : "text-white/80"}>Score stops strictly at ≥ 0</span>
-              </li>
+              {mission?.requirements.map((req, idx) => (
+                <li key={idx} className="flex items-start gap-2 transition-all">
+                  {completedReqs[idx] ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" /> : <Circle className="w-5 h-5 text-white/20 shrink-0" />}
+                  <span className={completedReqs[idx] ? "text-green-500" : "text-white/80"}>{req}</span>
+                </li>
+              ))}
             </ul>
 
             {/* Success Banner */}
@@ -225,7 +196,11 @@ export default function WorkspacePage() {
         {/* Center Dropdown: Editor & Preview */}
         <div className="flex-1 flex flex-col gap-2 min-w-[400px]">
           <div className="h-1/2 rounded-xl relative">
-            <WorkspaceEditor initialCode={code} onChange={setCode} onEvent={handleEvent} />
+            {mission ? (
+               <WorkspaceEditor key={mission.world} initialCode={code} onChange={setCode} onEvent={handleEvent} />
+            ) : (
+               <div className="w-full h-full flex items-center justify-center border border-white/10 rounded-xl bg-black/40 text-white/50 text-sm animate-pulse">Downloading mission payload...</div>
+            )}
           </div>
           <div className="h-1/2 rounded-xl relative">
             <WorkspacePreview code={code} runTrigger={runTrigger} onError={handleError} />
