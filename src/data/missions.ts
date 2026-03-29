@@ -59,7 +59,7 @@ export const MISSIONS: Record<string, MissionData> = {
 </script>
 `,
     validate: (code) => {
-      const stripped = code.replace(/\\s+/g, "");
+      const stripped = code.replace(/\s+/g, "");
       const req1 = code.includes("score += 10") || code.includes("score = score + 10");
       const req2 = code.includes("score -= 50") || code.includes("score = score - 50");
       const req3 = stripped.includes("Math.max(0") || stripped.includes("score=Math.max") || stripped.includes("if(score<0){score=0") || stripped.includes("if(score<0)score=0") || stripped.includes("if(score<=0)score=0");
@@ -128,7 +128,7 @@ export const MISSIONS: Record<string, MissionData> = {
 </script>
 `,
     validate: (code) => {
-      const stripped = code.replace(/\\s+/g, "");
+      const stripped = code.replace(/\s+/g, "");
       const req1 = code.includes("queueBtn") && code.includes("onclick");
       const req2 = stripped.includes(".push(");
       const req3 = stripped.includes("playlist.push(newTrack)") || stripped.includes("playlist.push(");
@@ -188,7 +188,7 @@ export const MISSIONS: Record<string, MissionData> = {
 </script>
 `,
     validate: (code) => {
-      const stripped = code.replace(/\\s+/g, "");
+      const stripped = code.replace(/\s+/g, "");
       const req1 = code.includes("deployBtn") && code.includes("onclick");
       const req2 = stripped.includes("for(") && stripped.includes("i++");
       const req3 = stripped.includes("deployedCrates++") || stripped.includes("deployedCrates+=1") || stripped.includes("cargoCrates--") || stripped.includes("cargoCrates-=1");
@@ -257,7 +257,7 @@ export const MISSIONS: Record<string, MissionData> = {
 </script>
 `,
     validate: (code) => {
-      const stripped = code.replace(/\\s+/g, "");
+      const stripped = code.replace(/\s+/g, "");
       const req1 = code.includes("bootBtn") && code.includes("onclick");
       const req2 = stripped.includes("drone.");
       const req3 = stripped.includes("drone.status=\"Online\"") || stripped.includes("drone.status='Online'");
